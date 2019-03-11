@@ -14,11 +14,10 @@ key = np.array([[0x2b, 0x28, 0xab, 0x09],
 
 cipherBase = CipherBase()
 aes = Aes(key)
-aes.set_state(plain_text ^ key)
-aes.round(isLast=False)
+aes.run(plain_text, key)
 aes.print_state_hex()
 
-aes.schedule_key(10)
+
 
 
 

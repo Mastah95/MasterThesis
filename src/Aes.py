@@ -13,6 +13,7 @@ class Aes(CipherBase):
         self.rcon = aes_rcon
         self.state = []
         self.key_schedule = [self.key]
+        self.schedule_key(10)
     
     def set_state(self, block):
         self.state = block
@@ -89,9 +90,14 @@ class Aes(CipherBase):
     def add_round_key(self, round_key):
         self.state ^= round_key
 
-    def round(self, isLast):
+    def round(self, isLast, round_number):
         self.sub_bytes()
         self.shift_rows()
         if not isLast:
             self.mix_columns()
-        #self.add_round_key(self.self.state)
+        self.add_round_key(self.key_schedule[round_number+1])
+
+    def run(self, plain_text, key):
+        self.set_state(plain_text ^ key)
+        for i in range(0, 10):
+            self.round(i == 9, i)
