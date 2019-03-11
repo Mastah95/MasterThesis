@@ -7,18 +7,22 @@ import numpy as np
 class Aes(CipherBase):
 
     def __init__(self, key):
-        self.key = key if key else b'\xFF\xFF\xFF\xFF'
+        self.key = key
         self.sbox = aes_sbox
         self.sbox_inv = aes_sbox_inv
         self.rcon = aes_rcon
         self.state = []
+        self.key_schedule = [self.key]
     
     def set_state(self, block):
-        print(block)
         self.state = block
 
+    @staticmethod
+    def print_mat_hex(matrix):
+        print(np.reshape([hex(x) for x in matrix.flatten()], (4, 4)))
+
     def print_state_hex(self):
-        print(np.reshape([hex(x) for x in self.state.flatten()], (4, 4)))
+        self.print_mat_hex(self.state)
 
     def sub_bytes(self):
         self.state = np.reshape([aes_sbox[elem] for elem in self.state.flatten()], (4, 4))
@@ -64,13 +68,30 @@ class Aes(CipherBase):
 
         self.state = np.reshape(block, (4, 4))
 
-        
+    def schedule_key(self, number_of_rounds):
+        counter = 0
+        for key in self.key_schedule or counter == number_of_rounds:
+            if counter == number_of_rounds:
+                break
+
+            key_cp = key
+            for i in range(0, 4):
+                if not i:
+                    word = np.array([aes_sbox[elem] for elem in np.roll(key_cp[:, 3], -1)]) ^ np.array([aes_rcon[counter], 0, 0, 0]) \
+                           ^ key_cp[:, 0]
+                else:
+                    word = key_cp[:, 0+i] ^ key_cp[:, 3+i]
+                key_cp = np.column_stack((key_cp, word))
+
+            counter += 1
+            self.key_schedule.append(key_cp[:, 4:8])
+
     def add_round_key(self, round_key):
         self.state ^= round_key
 
     def round(self, isLast):
-        self.sub_bytes(self.state)
-        self.shift_rows(self.state)
+        self.sub_bytes()
+        self.shift_rows()
         if not isLast:
-            self.mix_columns(self.state)
-        self.add_round_key(self.self.state)
+            self.mix_columns()
+        #self.add_round_key(self.self.state)
