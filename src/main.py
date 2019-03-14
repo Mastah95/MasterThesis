@@ -14,8 +14,13 @@ key = np.array([[0x2b, 0x28, 0xab, 0x09],
 
 cipherBase = CipherBase()
 aes = Aes(key)
-aes.run(plain_text, key)
+aes.cipher(plain_text, key)
 aes.print_state_hex()
+
+aes.decipher(aes.state, key)
+aes.print_state_hex()
+
+
 
 
 

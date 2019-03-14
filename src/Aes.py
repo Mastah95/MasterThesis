@@ -1,6 +1,6 @@
 
 from CipherBase import CipherBase
-from AesConstants import aes_sbox, aes_sbox_inv, aes_rcon, mix_col_mult
+from AesConstants import aes_sbox, aes_sbox_inv, aes_rcon, mix_col_mult, mix_col_mult_inv
 import numpy as np
 
 
@@ -28,10 +28,19 @@ class Aes(CipherBase):
     def sub_bytes(self):
         self.state = np.reshape([aes_sbox[elem] for elem in self.state.flatten()], (4, 4))
 
+    def sub_bytes_inv(self):
+        self.state = np.reshape([aes_sbox_inv[elem] for elem in self.state.flatten()], (4, 4))
+
     def shift_rows(self):
         shifted = []
         for i, column in enumerate(self.state):
             shifted.append(np.roll(column, -i))
+        self.state = np.asarray(shifted)
+
+    def shift_rows_inv(self):
+        shifted = []
+        for i, column in enumerate(self.state):
+            shifted.append(np.roll(column, i))
         self.state = np.asarray(shifted)
 
     def galois_field_mult(self, a, b):
@@ -46,24 +55,30 @@ class Aes(CipherBase):
             b >>= 1
         return p
 
-    def mix_columns(self):
+    def mix_columns(self, isInv):
         block = self.state.flatten()
+
+        if not isInv:
+            mult = mix_col_mult
+        else:
+            mult = mix_col_mult_inv
+
         for i in range(0, 4):
             col = block[i:i+16:4]
             col_cpy = col.copy()
             gfm = self.galois_field_mult  # alias for method
 
-            col[0] = gfm(col_cpy[0], mix_col_mult[0]) ^ gfm(col_cpy[3], mix_col_mult[1]) ^ \
-                     gfm(col_cpy[2], mix_col_mult[2]) ^ gfm(col_cpy[1], mix_col_mult[3])
+            col[0] = gfm(col_cpy[0], mult[0]) ^ gfm(col_cpy[3], mult[1]) ^ \
+                     gfm(col_cpy[2], mult[2]) ^ gfm(col_cpy[1], mult[3])
 
-            col[1] = gfm(col_cpy[1], mix_col_mult[0]) ^ gfm(col_cpy[0], mix_col_mult[1]) ^ \
-                     gfm(col_cpy[3], mix_col_mult[2]) ^ gfm(col_cpy[2], mix_col_mult[3])
+            col[1] = gfm(col_cpy[1], mult[0]) ^ gfm(col_cpy[0], mult[1]) ^ \
+                     gfm(col_cpy[3], mult[2]) ^ gfm(col_cpy[2], mult[3])
 
-            col[2] = gfm(col_cpy[2], mix_col_mult[0]) ^ gfm(col_cpy[1], mix_col_mult[1]) ^ \
-                     gfm(col_cpy[0], mix_col_mult[2]) ^ gfm(col_cpy[3], mix_col_mult[3])
+            col[2] = gfm(col_cpy[2], mult[0]) ^ gfm(col_cpy[1], mult[1]) ^ \
+                     gfm(col_cpy[0], mult[2]) ^ gfm(col_cpy[3], mult[3])
 
-            col[3] = gfm(col_cpy[3], mix_col_mult[0]) ^ gfm(col_cpy[2], mix_col_mult[1]) ^ \
-                     gfm(col_cpy[1], mix_col_mult[2]) ^ gfm(col_cpy[0], mix_col_mult[3])
+            col[3] = gfm(col_cpy[3], mult[0]) ^ gfm(col_cpy[2], mult[1]) ^ \
+                     gfm(col_cpy[1], mult[2]) ^ gfm(col_cpy[0], mult[3])
 
             block[i:i + 16:4] = col
 
@@ -94,10 +109,24 @@ class Aes(CipherBase):
         self.sub_bytes()
         self.shift_rows()
         if not isLast:
-            self.mix_columns()
+            self.mix_columns(isInv=False)
         self.add_round_key(self.key_schedule[round_number+1])
 
-    def run(self, plain_text, key):
+    def cipher(self, plain_text, key):
         self.set_state(plain_text ^ key)
         for i in range(0, 10):
             self.round(i == 9, i)
+
+    def round_inv(self, isFirst, round_number):
+        self.add_round_key(self.key_schedule[-1-round_number])
+        if not isFirst:
+            self.mix_columns(isInv=True)
+        self.shift_rows_inv()
+        self.sub_bytes_inv()
+
+    def decipher(self, crypt_text, key):
+        self.set_state(crypt_text)
+        for i in range(0, 10):
+            self.round_inv(i == 0, i)
+        self.set_state(self.state ^ key)
+
