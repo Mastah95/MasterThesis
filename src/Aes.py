@@ -11,6 +11,7 @@ class Aes(CipherBase):
         self.sbox = aes_sbox
         self.sbox_inv = aes_sbox_inv
         self.rcon = aes_rcon
+        self.chunk_size = 65536  # 64 KB
         self.state = []
         self.key_schedule = [self.key]
         self.schedule_key(10)

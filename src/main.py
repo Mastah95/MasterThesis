@@ -20,9 +20,8 @@ aes.print_state_hex()
 aes.decipher(aes.state, key)
 aes.print_state_hex()
 
-
-
-
+aes.cipher_text_file("test.txt", key)
+aes.decipher_text_file("cipher.txt", key)
 
 
 
