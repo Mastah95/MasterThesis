@@ -12,16 +12,22 @@ key = np.array([[0x2b, 0x28, 0xab, 0x09],
                 [0x15, 0xd2, 0x15, 0x4f],
                 [0x16, 0xa6, 0x88, 0x3c]])
 
-cipherBase = CipherBase()
-aes = Aes(key)
-aes.cipher(plain_text, key)
-aes.print_state_hex()
+cipherBase = CipherBase("CBC")
+aes = Aes(key, "CBC")
+#aes.cipher(plain_text, key)
+#aes.print_state_hex()
 
-aes.decipher(aes.state, key)
-aes.print_state_hex()
+#aes.decipher(aes.state, key)
+#aes.print_state_hex()
 
+import time
+
+start = time.time()
 aes.cipher_text_file("test.txt", key)
 aes.decipher_text_file("cipher.txt", key)
+end = time.time()
+print(end - start)
+
 
 
 

@@ -6,7 +6,8 @@ import numpy as np
 
 class Aes(CipherBase):
 
-    def __init__(self, key):
+    def __init__(self, key, operation_mode):
+        CipherBase.__init__(self, operation_mode)
         self.key = key
         self.sbox = aes_sbox
         self.sbox_inv = aes_sbox_inv

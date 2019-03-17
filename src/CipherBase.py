@@ -3,8 +3,11 @@ import numpy as np
 
 class CipherBase:
 
-    def __init__(self):
+    def __init__(self, operation_mode):
         self.state = np.array(np.zeros((4, 4)))
+        self.mode = operation_mode
+        self.iv = np.array(np.ones((4, 4)), dtype=int)
+        self.xor_factor = self.iv
 
     def cipher(self):
         pass
@@ -15,12 +18,9 @@ class CipherBase:
     def round(self):
         pass
 
-    def readFile(self):
-        pass
-
     def append_PKCS7_padding(self, data):
         pad = 16 - (len(data) % 16)
-        byt = bytes([ord(c) for c in ((chr(pad) * pad))])
+        byt = bytes([ord(c) for c in (chr(pad) * pad)])
         return data + byt
 
     def remove_PKCS7_padding(self, data):
@@ -30,11 +30,12 @@ class CipherBase:
         pad = ord(data[-1])
 
         if pad > 16:
-            raise ValueError("Pad has too big value")
+            raise ValueError("Ascii value more than possible padding")
 
         return data[:-pad]
 
     def cipher_text_file(self, filename, key):
+        padded = False
 
         with open(filename, "rb") as in_file, open('cipher.txt', 'wb') as out_file:
             while True:
@@ -42,17 +43,28 @@ class CipherBase:
                 if piece == b'':
                     break  # end of file
                 cipher = bytearray()
-                piece = self.append_PKCS7_padding(piece)
+
+                if len(piece) % 16 != 0 or (in_file.peek(self.chunk_size) == 'b' and not padded):
+                    piece = self.append_PKCS7_padding(piece)
+                    padded = True
 
                 for i in range(0, len(piece) // 16):
                     plain_t = np.reshape(np.array([elem for elem in piece[16 * i:16 * (i + 1)]]), (4, 4))
+
+                    if self.mode == "CBC":
+                        plain_t = plain_t ^ self.xor_factor
+
                     self.cipher(plain_t, key)
+                    self.xor_factor = self.state
+
                     for elem in self.state.flatten():
                         cipher.append(elem)
                 out_file.write(cipher)
 
     def decipher_text_file(self, filename, key):
-        with open(filename, "rb") as in_file, open('decipher.txt', 'w') as out_file:
+       
+        self.xor_factor = self.iv
+        with open(filename, "rb") as in_file, open('decipher.txt', 'w', encoding="ascii") as out_file:
             while True:
                 piece = in_file.read(self.chunk_size)
                 if piece == b'':
@@ -60,6 +72,16 @@ class CipherBase:
                 out_text = ""
                 for i in range(0, len(piece) // 16):
                     cipher_t = np.reshape(np.array([elem for elem in piece[16 * i:16 * (i + 1)]]), (4, 4))
-                    self.decipher(cipher_t, key)
-                    out_text += ''.join(chr(x) for x in self.state.flatten())
-                out_file.write(self.remove_PKCS7_padding(out_text))
+                    self.decipher(cipher_t.copy(), key)
+
+                    if self.mode == "CBC":
+                        deciph = self.state ^ self.xor_factor
+                    elif self.mode == "ECB":
+                        deciph = self.state
+                    self.xor_factor = cipher_t
+
+                    out_text += ''.join(chr(x) for x in deciph.flatten())
+
+                if in_file.peek(self.chunk_size) == b'':
+                    out_text = self.remove_PKCS7_padding(out_text)
+                out_file.write(out_text)
