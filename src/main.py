@@ -17,6 +17,12 @@ cipherBase = CipherBase("CBC")
 aes = Aes(key, "CBC")
 des = Des(key, "CBC")
 
+arrayek = [1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+assert(len(arrayek) == 32)
+keyek = [0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0,
+       0, 0, 0, 1, 1, 1, 0, 0, 1, 0]
+assert(len(keyek) == 48)
+print((des.des_round_function(data=np.array(arrayek), round_key=np.array(keyek))))
 import time
 
 start = time.time()
