@@ -15,16 +15,16 @@ key = np.array([[0x2b, 0x28, 0xab, 0x09],
 
 cipherBase = CipherBase("CBC")
 aes = Aes(key, "CBC")
-des = Des(key, "CBC")
 
-arrayek = [1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-assert(len(arrayek) == 32)
-keyek = [0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0,
-       0, 0, 0, 1, 1, 1, 0, 0, 1, 0]
-assert(len(keyek) == 48)
-print((des.des_round_function(data=np.array(arrayek), round_key=np.array(keyek))))
+arrayek = [0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF]
+byte_key = [0x1, 0x3, 0x3, 0x4, 0x5, 0x7, 0x7, 0x9, 0x9, 0xb, 0xb, 0xc, 0xd, 0xf, 0xf, 0x1]
+
+des = Des(byte_key, "CBC")
+
+des.cipher(arrayek)
+print(des.state)
+
 import time
-
 start = time.time()
 aes.cipher_text_file("test.txt", key)
 aes.decipher_text_file("cipher.txt", key)

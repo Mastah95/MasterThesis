@@ -17,9 +17,6 @@ class Aes(CipherBase):
         self.key_schedule = [self.key]
         self.schedule_key(10)
     
-    def set_state(self, block):
-        self.state = block
-
     @staticmethod
     def print_mat_hex(matrix):
         print(np.reshape([hex(x) for x in matrix.flatten()], (4, 4)))

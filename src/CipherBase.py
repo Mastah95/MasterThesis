@@ -9,6 +9,9 @@ class CipherBase:
         self.iv = np.array(np.ones((4, 4)), dtype=int)
         self.xor_factor = self.iv
 
+    def set_state(self, block):
+        self.state = block
+
     def cipher(self):
         pass
 
