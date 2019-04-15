@@ -6,13 +6,12 @@ import numpy as np
 
 class Aes(CipherBase):
 
-    def __init__(self, key, operation_mode):
-        CipherBase.__init__(self, operation_mode)
+    def __init__(self, key, operation_mode, byte_length):
+        CipherBase.__init__(self, operation_mode, byte_length)
         self.key = key
         self.sbox = aes_sbox
         self.sbox_inv = aes_sbox_inv
         self.rcon = aes_rcon
-        self.chunk_size = 65536  # 64 KB
         self.state = []
         self.key_schedule = [self.key]
         self.schedule_key(10)
@@ -112,7 +111,7 @@ class Aes(CipherBase):
         self.add_round_key(self.key_schedule[round_number+1])
 
     def cipher(self, plain_text, key):
-        self.set_state(plain_text ^ key)
+        self.set_state(np.reshape(plain_text, (4, 4)) ^ key)
         for i in range(0, 10):
             self.round(i == 9, i)
 
@@ -124,7 +123,7 @@ class Aes(CipherBase):
         self.sub_bytes_inv()
 
     def decipher(self, crypt_text, key):
-        self.set_state(crypt_text)
+        self.set_state(np.reshape(crypt_text, (4, 4)))
         for i in range(0, 10):
             self.round_inv(i == 0, i)
         self.set_state(self.state ^ key)

@@ -3,11 +3,13 @@ import numpy as np
 
 class CipherBase:
 
-    def __init__(self, operation_mode):
-        self.state = np.array(np.zeros((4, 4)))
+    def __init__(self, operation_mode, byte_length):
+        self.state = np.array(np.zeros(byte_length))
+        self.byte_length = byte_length
         self.mode = operation_mode
-        self.iv = np.array(np.ones((4, 4)), dtype=int)
+        self.iv = np.array(np.ones(byte_length), dtype=int)
         self.xor_factor = self.iv
+        self.chunk_size = 65536  # 64 KB
 
     def set_state(self, block):
         self.state = block
@@ -22,17 +24,17 @@ class CipherBase:
         pass
 
     def append_PKCS7_padding(self, data):
-        pad = 16 - (len(data) % 16)
+        pad = self.byte_length - (len(data) % self.byte_length)
         byt = bytes([ord(c) for c in (chr(pad) * pad)])
         return data + byt
 
     def remove_PKCS7_padding(self, data):
-        if len(data) % 16 != 0:
+        if len(data) % self.byte_length != 0:
             raise ValueError("Data not padded properly")
 
         pad = ord(data[-1])
 
-        if pad > 16:
+        if pad > self.byte_length:
             raise ValueError("Ascii value more than possible padding")
 
         return data[:-pad]
@@ -47,15 +49,15 @@ class CipherBase:
                     break  # end of file
                 cipher = bytearray()
 
-                if len(piece) % 16 != 0 or (in_file.peek(self.chunk_size) == 'b' and not padded):
+                if len(piece) % self.byte_length != 0 or (in_file.peek(self.chunk_size) == 'b' and not padded):
                     piece = self.append_PKCS7_padding(piece)
                     padded = True
 
-                for i in range(0, len(piece) // 16):
-                    plain_t = np.reshape(np.array([elem for elem in piece[16 * i:16 * (i + 1)]]), (4, 4))
+                for i in range(0, len(piece) // self.byte_length):
+                    plain_t = np.array([elem for elem in piece[self.byte_length * i:self.byte_length * (i + 1)]])
 
                     if self.mode == "CBC":
-                        plain_t = plain_t ^ self.xor_factor
+                        plain_t = plain_t ^ self.xor_factor.flatten()
 
                     self.cipher(plain_t, key)
                     self.xor_factor = self.state
@@ -73,12 +75,12 @@ class CipherBase:
                 if piece == b'':
                     break  # end of file
                 out_text = ""
-                for i in range(0, len(piece) // 16):
-                    cipher_t = np.reshape(np.array([elem for elem in piece[16 * i:16 * (i + 1)]]), (4, 4))
+                for i in range(0, len(piece) // self.byte_length):
+                    cipher_t = np.array([elem for elem in piece[self.byte_length * i:self.byte_length * (i + 1)]])
                     self.decipher(cipher_t.copy(), key)
 
                     if self.mode == "CBC":
-                        deciph = self.state ^ self.xor_factor
+                        deciph = self.state.flatten() ^ self.xor_factor
                     elif self.mode == "ECB":
                         deciph = self.state
                     self.xor_factor = cipher_t
