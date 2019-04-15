@@ -7,7 +7,7 @@ class CipherBase:
         self.state = np.array(np.zeros(byte_length))
         self.byte_length = byte_length
         self.mode = operation_mode
-        self.iv = np.array(np.ones(byte_length), dtype=int)
+        self.iv = np.array(np.ones(byte_length), dtype=np.uint8)
         self.xor_factor = self.iv
         self.chunk_size = 65536  # 64 KB
 
@@ -39,7 +39,7 @@ class CipherBase:
 
         return data[:-pad]
 
-    def cipher_text_file(self, filename, key):
+    def cipher_text_file(self, filename):
         padded = False
 
         with open(filename, "rb") as in_file, open('cipher.txt', 'wb') as out_file:
@@ -54,19 +54,18 @@ class CipherBase:
                     padded = True
 
                 for i in range(0, len(piece) // self.byte_length):
-                    plain_t = np.array([elem for elem in piece[self.byte_length * i:self.byte_length * (i + 1)]])
+                    plain_t = np.array([elem for elem in piece[self.byte_length * i:self.byte_length * (i + 1)]], np.uint8)
 
                     if self.mode == "CBC":
                         plain_t = plain_t ^ self.xor_factor.flatten()
 
-                    self.cipher(plain_t, key)
+                    self.cipher(plain_t)
                     self.xor_factor = self.state
-
                     for elem in self.state.flatten():
                         cipher.append(elem)
                 out_file.write(cipher)
 
-    def decipher_text_file(self, filename, key):
+    def decipher_text_file(self, filename):
        
         self.xor_factor = self.iv
         with open(filename, "rb") as in_file, open('decipher.txt', 'w', encoding="ascii") as out_file:
@@ -76,8 +75,9 @@ class CipherBase:
                     break  # end of file
                 out_text = ""
                 for i in range(0, len(piece) // self.byte_length):
-                    cipher_t = np.array([elem for elem in piece[self.byte_length * i:self.byte_length * (i + 1)]])
-                    self.decipher(cipher_t.copy(), key)
+                    cipher_t = np.array([elem for elem in piece[self.byte_length * i:self.byte_length * (i + 1)]], np.uint8)
+
+                    self.decipher(cipher_t.copy())
 
                     if self.mode == "CBC":
                         deciph = self.state.flatten() ^ self.xor_factor
@@ -87,6 +87,7 @@ class CipherBase:
 
                     out_text += ''.join(chr(x) for x in deciph.flatten())
 
-                if in_file.peek(self.chunk_size) == b'':
+                if in_file.peek(self.chunk_size) == b'' and len(piece) % self.byte_length != 0:
                     out_text = self.remove_PKCS7_padding(out_text)
+
                 out_file.write(out_text)
