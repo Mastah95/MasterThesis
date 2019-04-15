@@ -7,6 +7,7 @@ class Des(CipherBase):
 
     def __init__(self, key, operation_mode):
         self.state = []
+        self.key = []
         self.set_key_from_bytes(key)
         self.check_key()
         self.operation_mode = operation_mode
@@ -34,6 +35,12 @@ class Des(CipherBase):
 
     def drop_every_eighth_element(self, arr):
         return np.array([elem[1] for elem in enumerate(arr) if (elem[0]+1) % 8])
+
+    def four_bits_to_hex(self, four_bits_arr):
+        return hex(int(four_bits_arr[0] << 3 | four_bits_arr[1] << 2 | four_bits_arr[2] << 1 | four_bits_arr[3]))
+
+    def state_to_hex_arr(self):
+        return np.array([self.four_bits_to_hex(self.state[4*i:4*i+4]) for i in range(0, 16)])
 
     def strip_beginning_4_zeros(self, data_8bit):
         return data_8bit[4:]
@@ -88,7 +95,7 @@ class Des(CipherBase):
         li = self.get_left_part(self.state)
         ri = self.get_right_part(self.state)
         new_ri = li ^ self.des_round_function(ri, self.scheduled_keys[round_number])
-        print(f'RRR{new_ri}, {type(new_ri)}')
+
         self.set_state(np.concatenate((ri, new_ri)))
 
     def cipher(self, plain_text):
@@ -101,4 +108,12 @@ class Des(CipherBase):
         self.set_state(np.concatenate((self.get_right_part(self.state), self.get_left_part(self.state))))
         self.set_state(np.array([self.state[ip_inv[i]-1] for i in range(0, 64)]))
 
+    def decipher(self, cipher_text):
+        self.set_state(cipher_text)
+        self.initial_permutation()
 
+        for i in range(0, 16):
+            self.round(16-i-1)
+
+        self.set_state(np.concatenate((self.get_right_part(self.state), self.get_left_part(self.state))))
+        self.set_state(np.array([self.state[ip_inv[i] - 1] for i in range(0, 64)]))

@@ -22,7 +22,11 @@ byte_key = [0x1, 0x3, 0x3, 0x4, 0x5, 0x7, 0x7, 0x9, 0x9, 0xb, 0xb, 0xc, 0xd, 0xf
 des = Des(byte_key, "CBC")
 
 des.cipher(arrayek)
-print(des.state)
+print(des.state_to_hex_arr())
+
+des.decipher(des.state)
+print(des.state_to_hex_arr())
+
 
 import time
 start = time.time()
