@@ -6,20 +6,16 @@ import numpy as np
 
 class Aes(CipherBase):
 
-    def __init__(self, key, operation_mode):
-        CipherBase.__init__(self, operation_mode)
+    def __init__(self, key, operation_mode, byte_length):
+        CipherBase.__init__(self, operation_mode, byte_length)
         self.key = key
         self.sbox = aes_sbox
         self.sbox_inv = aes_sbox_inv
         self.rcon = aes_rcon
-        self.chunk_size = 65536  # 64 KB
         self.state = []
         self.key_schedule = [self.key]
         self.schedule_key(10)
     
-    def set_state(self, block):
-        self.state = block
-
     @staticmethod
     def print_mat_hex(matrix):
         print(np.reshape([hex(x) for x in matrix.flatten()], (4, 4)))
@@ -95,7 +91,8 @@ class Aes(CipherBase):
             key_cp = key
             for i in range(0, 4):
                 if not i:
-                    word = np.array([aes_sbox[elem] for elem in np.roll(key_cp[:, 3], -1)]) ^ np.array([aes_rcon[counter], 0, 0, 0]) \
+                    word = np.array([aes_sbox[elem] for elem in np.roll(key_cp[:, 3], -1)], np.uint8) \
+                           ^ np.array([aes_rcon[counter], 0, 0, 0], np.uint8) \
                            ^ key_cp[:, 0]
                 else:
                     word = key_cp[:, 0+i] ^ key_cp[:, 3+i]
@@ -114,8 +111,8 @@ class Aes(CipherBase):
             self.mix_columns(isInv=False)
         self.add_round_key(self.key_schedule[round_number+1])
 
-    def cipher(self, plain_text, key):
-        self.set_state(plain_text ^ key)
+    def cipher(self, plain_text):
+        self.set_state(np.reshape(plain_text, (4, 4)) ^ self.key)
         for i in range(0, 10):
             self.round(i == 9, i)
 
@@ -126,9 +123,9 @@ class Aes(CipherBase):
         self.shift_rows_inv()
         self.sub_bytes_inv()
 
-    def decipher(self, crypt_text, key):
-        self.set_state(crypt_text)
+    def decipher(self, crypt_text):
+        self.set_state(np.reshape(crypt_text, (4, 4)))
         for i in range(0, 10):
             self.round_inv(i == 0, i)
-        self.set_state(self.state ^ key)
+        self.set_state(self.state ^ self.key)
 
