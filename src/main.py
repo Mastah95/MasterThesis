@@ -1,6 +1,7 @@
 from CipherBase import CipherBase
 from Aes import Aes
 from Des import Des
+from RC6 import RC6
 import numpy as np
 
 plain_text = np.array([[0x32, 0x88, 0x31, 0xe0],
@@ -21,6 +22,11 @@ byte_key = [0x1, 0x3, 0x3, 0x4, 0x5, 0x7, 0x7, 0x9, 0x9, 0xb, 0xb, 0xc, 0xd, 0xf
 
 des = Des(byte_key, "CBC", 8)
 
+rc6 = RC6(byte_key, "CBC", 2, 10)
+test = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+rc6.set_state(test)
+rc6.state_to_blocks()
+rc6.blocks_to_state()
 import time
 start = time.time()
 aes.cipher_text_file("test.txt")
