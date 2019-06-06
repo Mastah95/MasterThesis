@@ -22,11 +22,15 @@ byte_key = [0x1, 0x3, 0x3, 0x4, 0x5, 0x7, 0x7, 0x9, 0x9, 0xb, 0xb, 0xc, 0xd, 0xf
 
 des = Des(byte_key, "CBC", 8)
 
-rc6 = RC6(byte_key, "CBC", 2, 10)
-test = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-rc6.set_state(test)
-rc6.state_to_blocks()
-rc6.blocks_to_state()
+
+test_key = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+rc6 = RC6(test_key, "CBC", 16, 10)
+test = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]
+
+rc6.cipher(test_key)
+print(len(rc6.state))
+print([hex(elem) for elem in rc6.state])
+
 import time
 start = time.time()
 aes.cipher_text_file("test.txt")
