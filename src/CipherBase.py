@@ -9,7 +9,7 @@ class CipherBase:
         self.mode = operation_mode
         self.iv = np.array(np.ones(byte_length), dtype=np.uint8)
         self.xor_factor = self.iv
-        self.chunk_size = 65536  # 64 KB
+        self.chunk_size = 64#65536  # 64 KB
 
     def set_state(self, block):
         self.state = block
@@ -25,6 +25,7 @@ class CipherBase:
 
     def append_PKCS7_padding(self, data):
         pad = self.byte_length - (len(data) % self.byte_length)
+        print(f'AAAAAA {pad}')
         byt = bytes([ord(c) for c in (chr(pad) * pad)])
         return data + byt
 
