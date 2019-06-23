@@ -9,7 +9,7 @@ class CipherBase:
         self.mode = operation_mode
         self.iv = np.array(np.ones(byte_length), dtype=np.uint8)
         self.xor_factor = self.iv
-        self.chunk_size = 64#65536  # 64 KB
+        self.chunk_size = 1024**2  # 64 KB
 
     def set_state(self, block):
         self.state = block
@@ -25,7 +25,7 @@ class CipherBase:
 
     def append_PKCS7_padding(self, data):
         pad = self.byte_length - (len(data) % self.byte_length)
-        print(f'AAAAAA {pad}')
+
         byt = bytes([ord(c) for c in (chr(pad) * pad)])
         return data + byt
 
@@ -42,9 +42,11 @@ class CipherBase:
 
     def cipher_text_file(self, filename):
         padded = False
+        self.xor_factor = self.iv
 
         with open(filename, "rb") as in_file, open('cipher.txt', 'wb') as out_file:
             while True:
+
                 piece = in_file.read(self.chunk_size)
                 if piece == b'':
                     break  # end of file
@@ -64,6 +66,7 @@ class CipherBase:
                     self.xor_factor = self.state
                     for elem in self.state.flatten():
                         cipher.append(elem)
+
                 out_file.write(cipher)
 
     def decipher_text_file(self, filename):
@@ -88,7 +91,7 @@ class CipherBase:
 
                     out_text += ''.join(chr(x) for x in deciph.flatten())
 
-                if in_file.peek(self.chunk_size) == b'' and len(piece) % self.byte_length != 0:
+                if in_file.peek(self.chunk_size) == b'' or len(piece) % self.byte_length != 0:
                     out_text = self.remove_PKCS7_padding(out_text)
 
                 out_file.write(out_text)
