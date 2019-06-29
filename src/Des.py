@@ -22,6 +22,7 @@ class Des(CipherBase):
                 raise KeyError('Des key not paired properly')
 
     def schedule_keys(self):
+        self.scheduled_keys = []
         base_key = np.array([self.key[key_perm_1[i]-1] for i in range(0, 56)])
         for i in range(1, 17):
             left_part = self.get_left_part(base_key)

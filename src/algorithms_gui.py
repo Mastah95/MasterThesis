@@ -14,17 +14,21 @@ class Gui(QtCore.QObject):
         self.app = QtGui.QApplication(sys.argv)
         self.main_window = QtGui.QWidget()
         self.main_window.setWindowTitle("Encryption algorithms")
+
+        key = [np.uint8(int.from_bytes(os.urandom(1), sys.byteorder)) for _ in range(0, 16)]
+        des_key = [0x1, 0x3, 0x3, 0x4, 0x5, 0x7, 0x7, 0x9, 0x9, 0xb, 0xb, 0xc, 0xd, 0xf, 0xf, 0x1]
+        self.aes = Aes(np.reshape(key, (4, 4)), "CBC", 16)
+        self.des = Des(des_key, "ECB", 8)
+        self.rc6 = RC6(key, "ECB", 16, 20)
+        self.alg_dict = dict(list(enumerate([self.aes, self.des, self.rc6])))
+        self.mode_dict = dict(list(enumerate(["ECB", "CBC"])))
+
         self.main_layout = QtGui.QVBoxLayout()
         self.create_alg_selector()
         self.create_encryption_selector()
         self.create_operational_mode_selector()
         self.create_file_selector()
         self.create_key_dialog()
-        key = [np.uint8(int.from_bytes(os.urandom(1), sys.byteorder)) for _ in range(0, 16)]
-        des_key = [0x1, 0x3, 0x3, 0x4, 0x5, 0x7, 0x7, 0x9, 0x9, 0xb, 0xb, 0xc, 0xd, 0xf, 0xf, 0x1]
-        self.aes = Aes(np.reshape(key, (4, 4)), "CBC", 16)
-        self.des = Des(des_key, "ECB", 8)
-        self.rc6 = RC6(key, "ECB", 16, 20)
 
         self.main_layout.addLayout(self.file_selector_label_layout)
         self.main_layout.addLayout(self.key_label_layout)
@@ -49,8 +53,9 @@ class Gui(QtCore.QObject):
         self.group_button_lay = QtGui.QHBoxLayout()
         buttons = [self.aes_button, self.des_button, self.rc6_button]
 
-        for button in buttons:
+        for i, button in enumerate(buttons):
             self.algorithm_selector.addButton(button)
+            self.algorithm_selector.setId(button, i)
             self.group_button_lay.addWidget(button)
         self.button_layout.addLayout(self.group_button_lay)
 
@@ -83,9 +88,11 @@ class Gui(QtCore.QObject):
         buttons = [self.ecb_button, self.cbc_button]
         self.mode_button_lay = QtGui.QHBoxLayout()
 
-        for button in buttons:
+        for i, button in enumerate(buttons):
             self.mode_selector.addButton(button)
+            self.mode_selector.setId(button, i)
             self.mode_button_lay.addWidget(button, 0)
+
         self.mode_button_lay.addWidget(self.change_mode_button)
         self.mode_label_layout.addLayout(self.mode_button_lay)
 
@@ -117,10 +124,23 @@ class Gui(QtCore.QObject):
             self.path_viewer.setText(self.current_filename[0])
 
     def changeOperationalMode(self):
-        print("Elo")
+        self.getCurrentAlgorithm().mode = self.getSelectedMode()
 
     def changeKey(self):
-        print("Key changed")
+        text_key = self.key_input.text()
+
+        while len(text_key) < 16:
+            text_key += "!"
+        byte_key = [ord(elem) for elem in text_key]
+        algorithm = self.getCurrentAlgorithm()
+        if algorithm.__class__.__name__ == "Aes":
+            algorithm.key = np.array(np.reshape(byte_key, (4, 4)), dtype=np.uint8)
+        elif algorithm.__class__.__name__ == "Des":
+            algorithm.set_key_from_bytes(byte_key)
+        else:
+            algorithm.key = byte_key
+
+        algorithm.schedule_keys()
 
     def create_key_dialog(self):
         self.key_label_layout = QtGui.QVBoxLayout()
@@ -139,9 +159,21 @@ class Gui(QtCore.QObject):
         self.key_label_layout.addLayout(self.key_input_layout)
 
     def runFunction(self):
-        self.aes.cipher_text_file(self.current_filename[0])
-        self.aes.decipher_text_file("cipher.txt")
-        print("Ended")
+        try:
+            if self.enc_button.isChecked():
+                self.getCurrentAlgorithm().cipher_text_file(self.current_filename[0])
+            elif self.dec_button.isChecked():
+                self.getCurrentAlgorithm().decipher_text_file("cipher.txt")
+
+        except:
+            print("Error occured")
+
+
+    def getCurrentAlgorithm(self):
+        return self.alg_dict[self.algorithm_selector.checkedId()]
+
+    def getSelectedMode(self):
+        return self.mode_dict[self.mode_selector.checkedId()]
 
 
 

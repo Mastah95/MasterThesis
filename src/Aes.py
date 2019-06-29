@@ -14,7 +14,7 @@ class Aes(CipherBase):
         self.rcon = aes_rcon
         self.state = []
         self.key_schedule = [self.key]
-        self.schedule_key(10)
+        self.schedule_keys(10)
     
     @staticmethod
     def print_mat_hex(matrix):
@@ -82,7 +82,8 @@ class Aes(CipherBase):
 
         self.state = np.reshape(block, (4, 4))
 
-    def schedule_key(self, number_of_rounds):
+    def schedule_keys(self, number_of_rounds=10):
+        self.key_schedule = [self.key]
         counter = 0
         for key in self.key_schedule or counter == number_of_rounds:
             if counter == number_of_rounds:

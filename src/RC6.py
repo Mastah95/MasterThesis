@@ -15,7 +15,7 @@ class RC6(CipherBase):
         self.w = byte_length * 8 // 4
         self.lgw = np.uint(np.log2(self.w))
         self.scheduled_keys = np.zeros(2 * rounds_number + 4, dtype=type_w_dict[str(self.w)])
-        self.key_schedule()
+        self.schedule_keys()
 
     def rotr(self, x, n, num_bytes=np.uint(32)):
         n = n << np.uint(self.w - self.lgw)
@@ -100,7 +100,7 @@ class RC6(CipherBase):
         dict_key = str(self.w) + "_bit"
         return np.uint(p_w_dict[dict_key]), np.uint(q_w_dict[dict_key])
 
-    def key_schedule(self):
+    def schedule_keys(self):
         u = self.w // 8
         c = self.key_length // u or 1
         L = np.zeros(c, dtype=type_w_dict[str(self.w)])
